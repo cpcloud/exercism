@@ -79,18 +79,25 @@ pub struct Reactor<T> {
     // You probably want to delete this field.
     graph: HashMap<CellID, Vec<CellID>>,
     input_values: HashMap<InputCellID, T>,
-    compute_cell_funcs: HashMap<ComputeCellID, Box<dyn Fn(&[T]) -> T>>,
-    callbacks: HashMap<ComputeCellID, HashMap<CallbackID, Box<dyn FnMut(T)>>>,
+    compute_cell_funcs: HashMap<
+        ComputeCellID,
+        (
+            Box<dyn Fn(&[T]) -> T>,
+            HashMap<CallbackID, Box<dyn FnMut(T)>>,
+        ),
+    >,
 }
 
 // You are guaranteed that Reactor will only be tested against types that are Copy + PartialEq.
-impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
+impl<T> Reactor<T>
+where
+    T: Copy + PartialEq,
+{
     pub fn new() -> Self {
         Self {
             graph: Default::default(),
             input_values: Default::default(),
             compute_cell_funcs: Default::default(),
-            callbacks: Default::default(),
         }
     }
 
@@ -130,8 +137,10 @@ impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
         }
 
         let compute_cell_id = ComputeCellID::new();
-        self.compute_cell_funcs
-            .insert(compute_cell_id, Box::new(compute_func));
+        self.compute_cell_funcs.insert(
+            compute_cell_id,
+            (Box::new(compute_func), Default::default()),
+        );
         self.graph.insert(
             CellID::Compute(compute_cell_id),
             dependencies.iter().copied().collect(),
@@ -152,7 +161,7 @@ impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
             CellID::Compute(compute_cell_id) => self
                 .compute_cell_funcs
                 .get(&compute_cell_id)
-                .and_then(|func| {
+                .and_then(|(func, _)| {
                     let mut evaluated_deps = vec![];
                     for &dep in self.graph[&id].iter() {
                         if let Some(dep_value) = self.value(dep) {
@@ -221,9 +230,9 @@ impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
             }
 
             for (cell_to_callback, new_value) in cells_to_callback.into_iter() {
-                if let Some(callbacks) = self.callbacks.get_mut(&cell_to_callback) {
+                if let Some((_, callbacks)) = self.compute_cell_funcs.get_mut(&cell_to_callback) {
                     for callback in callbacks.values_mut() {
-                        callback(new_value);
+                        (callback)(new_value);
                     }
                 }
             }
@@ -249,12 +258,9 @@ impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
     where
         F: FnMut(T) + 'static,
     {
-        if self.compute_cell_funcs.contains_key(&id) {
+        if let Some((_, callbacks)) = self.compute_cell_funcs.get_mut(&id) {
             let callback_id = CallbackID::new();
-            self.callbacks
-                .entry(id)
-                .or_default()
-                .insert(callback_id, Box::new(callback));
+            callbacks.insert(callback_id, Box::new(callback));
             Some(callback_id)
         } else {
             None
@@ -272,9 +278,10 @@ impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
         callback: CallbackID,
     ) -> Result<(), RemoveCallbackError> {
         if self
-            .callbacks
+            .compute_cell_funcs
             .get_mut(&cell)
             .ok_or(RemoveCallbackError::NonexistentCell)?
+            .1
             .remove(&callback)
             .is_none()
         {
