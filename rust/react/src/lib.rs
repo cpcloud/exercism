@@ -74,7 +74,7 @@ pub enum RemoveCallbackError {
     NonexistentCallback,
 }
 
-pub struct Reactor<T> {
+pub struct Reactor<'a, T> {
     // Just so that the compiler doesn't complain about an unused type parameter.
     // You probably want to delete this field.
     graph: HashMap<CellID, Vec<CellID>>,
@@ -82,14 +82,14 @@ pub struct Reactor<T> {
     compute_cell_funcs: HashMap<
         ComputeCellID,
         (
-            Box<dyn Fn(&[T]) -> T>,
-            HashMap<CallbackID, Box<dyn FnMut(T)>>,
+            Box<dyn Fn(&[T]) -> T + 'a>,
+            HashMap<CallbackID, Box<dyn FnMut(T) + 'a>>,
         ),
     >,
 }
 
 // You are guaranteed that Reactor will only be tested against types that are Copy + PartialEq.
-impl<T> Reactor<T>
+impl<'a, T> Reactor<'a, T>
 where
     T: Copy + PartialEq,
 {
@@ -128,7 +128,7 @@ where
         compute_func: F,
     ) -> Result<ComputeCellID, CellID>
     where
-        F: Fn(&[T]) -> T + 'static,
+        F: Fn(&[T]) -> T + 'a,
     {
         for &dep in dependencies.iter() {
             if !self.graph.contains_key(&dep) {
@@ -256,7 +256,7 @@ where
     //   set_value call.
     pub fn add_callback<F>(&mut self, id: ComputeCellID, callback: F) -> Option<CallbackID>
     where
-        F: FnMut(T) + 'static,
+        F: FnMut(T) + 'a,
     {
         if let Some((_, callbacks)) = self.compute_cell_funcs.get_mut(&id) {
             let callback_id = CallbackID::new();
