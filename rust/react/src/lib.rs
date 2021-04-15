@@ -121,7 +121,7 @@ impl<T: Copy + PartialEq + std::fmt::Debug> Reactor<T> {
         compute_func: F,
     ) -> Result<ComputeCellID, CellID>
     where
-        F: for<'a> Fn(&'a [T]) -> T + 'static,
+        F: Fn(&[T]) -> T + 'static,
     {
         for &dep in dependencies.iter() {
             if !self.graph.contains_key(&dep) {
