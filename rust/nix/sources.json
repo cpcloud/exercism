@@ -1,0 +1,38 @@
+{
+    "fenix": {
+        "branch": "main",
+        "description": "Rust nightly toolchains and rust analyzer nightly for nix [maintainer=@figsoda]",
+        "homepage": "",
+        "owner": "nix-community",
+        "repo": "fenix",
+        "rev": "3b580561185bf7e6fd4edc127b4e3ca1dd970895",
+        "sha256": "0lksprviajdhh5fwlawbrs06dyi0nrzv87zxxd8z6jlydnnzdsi8",
+        "type": "tarball",
+        "url": "https://github.com/nix-community/fenix/archive/3b580561185bf7e6fd4edc127b4e3ca1dd970895.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "niv": {
+        "branch": "master",
+        "description": "Easy dependency management for Nix projects",
+        "homepage": "https://github.com/nmattia/niv",
+        "owner": "nmattia",
+        "repo": "niv",
+        "rev": "af958e8057f345ee1aca714c1247ef3ba1c15f5e",
+        "sha256": "1qjavxabbrsh73yck5dcq8jggvh3r2jkbr6b5nlz5d9yrqm9255n",
+        "type": "tarball",
+        "url": "https://github.com/nmattia/niv/archive/af958e8057f345ee1aca714c1247ef3ba1c15f5e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "nixos-unstable-small",
+        "description": "Nix Packages collection",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ca373323f1dc92702a606e761b8d58faa9dc610c",
+        "sha256": "1bsah6g0kys2qvrslbisg28z7wl7rn9kga3wnpbmj7jp2r1giskd",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/ca373323f1dc92702a606e761b8d58faa9dc610c.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}
