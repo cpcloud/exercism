@@ -86,12 +86,10 @@ impl<T: Clone> CircularBuffer<T> {
 
     pub fn overwrite(&mut self, element: T) {
         if !self.is_full() {
-            self.buf[self.writer_pos].replace(element);
-            self.advance_writer();
+            self.write(element).expect("the buffer not to be full");
         } else {
             self.buf[self.reader_pos].replace(element);
-            self.reader_pos += 1;
-            self.reader_pos %= self.capacity;
+            self.reader_pos = (self.reader_pos + 1) % self.capacity;
         }
     }
 }
