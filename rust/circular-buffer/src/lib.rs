@@ -74,7 +74,9 @@ impl<T: Clone> CircularBuffer<T> {
             return Err(Error::EmptyBuffer);
         }
 
-        let result = self.buf[self.reader_pos].take().ok_or(Error::EmptyBuffer)?;
+        let result = self.buf[self.reader_pos]
+            .take()
+            .expect("the element to be Some");
         self.advance_reader();
         Ok(result)
     }
