@@ -3,13 +3,12 @@ name = "xorcism"
 version = "0.1.0"
 edition = "2018"
 
-
 [dependencies]
 
 [features]
 io = []
 
 [dev-dependencies]
-hexlit = "0.3.0"
-rstest = "0.6.4"
+hexlit = "0.5"
+rstest = "0.7"
 rstest_reuse = "0.1.0"
