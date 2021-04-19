@@ -1,3 +1,5 @@
+#![feature(map_into_keys_values)]
+
 /// Given a list of poker hands, return a list of those hands which win.
 ///
 /// Note the type signature: this function should return _the same_ reference to
@@ -131,34 +133,53 @@ enum HandRank {
     StraightFlush(Hand),
 }
 
-fn order_by_rank(lhs: &[Card], rhs: &[Card]) -> Option<Ordering> {
-    lhs.iter()
-        .copied()
-        .zip(rhs.iter().copied())
+fn order_by_rank(lhs: &Hand, rhs: &Hand) -> Option<Ordering> {
+    order_by_rank_cards(&lhs.cards, &rhs.cards)
+}
+
+fn order_by_rank_cards(lhs: &[Card], rhs: &[Card]) -> Option<Ordering> {
+    order_by_rank_values(
+        lhs.iter().map(|card| card.value),
+        rhs.iter().map(|card| card.value),
+    )
+}
+
+fn order_by_rank_values(
+    lhs: impl Iterator<Item = Value>,
+    rhs: impl Iterator<Item = Value>,
+) -> Option<Ordering> {
+    lhs.zip(rhs)
         .map(|(left, right)| left.partial_cmp(&right).unwrap_or(Ordering::Equal))
         .find(|&ordering| ordering != Ordering::Equal)
 }
 
-fn order_by_rank_full_house(lhs: &Hand, rhs: &Hand) -> Ordering {
-    let lhs_accounting = count_values(lhs);
-    let rhs_accounting = count_values(rhs);
-    match lhs_accounting[&3].cmp(&rhs_accounting[&3]) {
-        Ordering::Equal => lhs_accounting[&2].cmp(&rhs_accounting[&2]),
-        otherwise => otherwise,
-    }
-}
+fn order_by_rank_grouped(lhs: &Hand, rhs: &Hand, cmp_order: &[usize]) -> Option<Ordering> {
+    let mut lhs_accounting = count_values(lhs);
+    let mut rhs_accounting = count_values(rhs);
 
-fn order_by_rank_four_of_a_kind(lhs: &Hand, rhs: &Hand) -> Ordering {
-    let lhs_accounting = count_values(lhs);
-    let rhs_accounting = count_values(rhs);
-    match lhs_accounting[&4].cmp(&rhs_accounting[&4]) {
-        Ordering::Equal => lhs_accounting[&1].cmp(&rhs_accounting[&1]),
-        otherwise => otherwise,
+    for &order in cmp_order.iter() {
+        match lhs_accounting
+            .remove(&order)
+            .unwrap()
+            .cmp(&rhs_accounting.remove(&order).unwrap())
+        {
+            Ordering::Equal => continue,
+            otherwise => return Some(otherwise),
+        }
     }
+
+    let lhs_cards = lhs_accounting.into_values().collect::<Vec<_>>();
+    let rhs_cards = rhs_accounting.into_values().collect::<Vec<_>>();
+
+    order_by_rank_values(lhs_cards.into_iter(), rhs_cards.into_iter())
 }
 
 fn has_card_value(cards: &[Card], value: Value) -> bool {
-    cards.iter().copied().any(|card| card.value == value)
+    cards.iter().any(|card| card.value == value)
+}
+
+fn sort_cards(cards: &mut [Card]) {
+    cards.sort_by(|left, right| right.partial_cmp(left).unwrap_or(Ordering::Equal));
 }
 
 fn ace_low_straight_rank(cards: &[Card]) -> Vec<Card> {
@@ -168,7 +189,7 @@ fn ace_low_straight_rank(cards: &[Card]) -> Vec<Card> {
             card.value = Value::LowAce;
         }
     });
-    result.sort_by(|left, right| left.partial_cmp(right).unwrap_or(Ordering::Equal));
+    sort_cards(&mut result);
     result
 }
 
@@ -189,35 +210,31 @@ fn order_by_rank_straight(lhs: &[Card], rhs: &[Card]) -> Option<Ordering> {
         (true, true, false) => ace_low_straight_rank(rhs),
         _ => rhs.to_owned(),
     };
-    order_by_rank(&lhs, &rhs)
+    order_by_rank_cards(&lhs, &rhs)
 }
 
 impl PartialOrd for HandRank {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(match (self, other) {
             (Self::StraightFlush(lhs), Self::StraightFlush(rhs)) => {
-                return order_by_rank(&lhs.cards, &rhs.cards);
+                return order_by_rank(&lhs, &rhs);
             }
             (Self::FourOfAKind(lhs), Self::FourOfAKind(rhs)) => {
-                order_by_rank_four_of_a_kind(&lhs, &rhs)
+                return order_by_rank_grouped(&lhs, &rhs, &[4, 1]);
             }
-            (Self::FullHouse(lhs), Self::FullHouse(rhs)) => order_by_rank_full_house(&lhs, &rhs),
-            (Self::Flush(lhs), Self::Flush(rhs)) => return order_by_rank(&lhs.cards, &rhs.cards),
+            (Self::FullHouse(lhs), Self::FullHouse(rhs)) => {
+                return order_by_rank_grouped(&lhs, &rhs, &[3, 2]);
+            }
+            (Self::Flush(lhs), Self::Flush(rhs)) => return order_by_rank(&lhs, &rhs),
             (Self::Straight(lhs), Self::Straight(rhs)) => {
                 return order_by_rank_straight(&lhs.cards, &rhs.cards);
             }
             (Self::ThreeOfAKind(lhs), Self::ThreeOfAKind(rhs)) => {
-                return order_by_rank(&lhs.cards, &rhs.cards);
+                return order_by_rank(&lhs, &rhs);
             }
-            (Self::TwoPair(lhs), Self::TwoPair(rhs)) => {
-                return order_by_rank(&lhs.cards, &rhs.cards);
-            }
-            (Self::OnePair(lhs), Self::OnePair(rhs)) => {
-                return order_by_rank(&lhs.cards, &rhs.cards);
-            }
-            (Self::HighCard(lhs), Self::HighCard(rhs)) => {
-                return order_by_rank(&lhs.cards, &rhs.cards);
-            }
+            (Self::TwoPair(lhs), Self::TwoPair(rhs)) => return order_by_rank(&lhs, &rhs),
+            (Self::OnePair(lhs), Self::OnePair(rhs)) => return order_by_rank(&lhs, &rhs),
+            (Self::HighCard(lhs), Self::HighCard(rhs)) => return order_by_rank(&lhs, &rhs),
 
             (Self::StraightFlush(_), _) => Ordering::Greater,
             (_, Self::StraightFlush(_)) => Ordering::Less,
@@ -247,17 +264,19 @@ impl PartialOrd for HandRank {
 }
 
 fn value_counts(hand: &Hand) -> HashMap<Value, usize> {
-    let mut value_map = HashMap::<_, usize>::new();
+    let mut value_map = HashMap::new();
 
-    for card in hand.cards.iter().copied() {
-        *value_map.entry(card.value).or_default() += 1;
+    for &Card { value, .. } in hand.cards.iter() {
+        *value_map.entry(value).or_default() += 1;
     }
     value_map
 }
 
 fn count_values(hand: &Hand) -> HashMap<usize, Value> {
-    let vc = value_counts(hand);
-    vc.into_iter().map(|(key, value)| (value, key)).collect()
+    value_counts(hand)
+        .into_iter()
+        .map(|(key, value)| (value, key))
+        .collect()
 }
 
 fn straight_flush(hand: Hand) -> Option<HandRank> {
@@ -269,11 +288,7 @@ fn straight_flush(hand: Hand) -> Option<HandRank> {
 }
 
 fn four_of_a_kind(hand: Hand) -> Option<HandRank> {
-    if value_counts(&hand)
-        .values()
-        .copied()
-        .any(|count| count == 4)
-    {
+    if value_counts(&hand).values().any(|&count| count == 4) {
         Some(HandRank::FourOfAKind(hand))
     } else {
         None
@@ -295,15 +310,14 @@ fn full_house(hand: Hand) -> Option<HandRank> {
 }
 
 fn flush(hand: Hand) -> Option<HandRank> {
-    let mut suits = hand
+    if hand
         .cards
         .iter()
-        .copied()
         .map(|card| card.suit)
-        .collect::<Vec<_>>();
-    suits.dedup();
-
-    if suits.len() == 1 {
+        .collect::<HashSet<_>>()
+        .len()
+        == 1
+    {
         Some(HandRank::Flush(hand))
     } else {
         None
@@ -313,19 +327,13 @@ fn flush(hand: Hand) -> Option<HandRank> {
 fn is_straight(card_values: &[Value]) -> bool {
     let result = card_values
         .windows(2)
-        .map(|window| dbg!(window[1] - window[0]))
+        .map(|window| window[1] - window[0])
         .all(|value| value == 1);
-    dbg!(card_values, result);
     result
 }
 
 fn straight(hand: Hand) -> Option<HandRank> {
-    let mut card_values = hand
-        .cards
-        .iter()
-        .copied()
-        .map(|card| card.value)
-        .collect::<Vec<_>>();
+    let mut card_values = hand.cards.iter().map(|card| card.value).collect::<Vec<_>>();
     card_values.sort();
 
     if is_straight(&card_values) {
@@ -389,7 +397,7 @@ impl FromStr for Hand {
             .map(|s| s.parse::<Card>())
             .collect::<Result<Vec<_>, _>>()?;
         assert_eq!(cards.len(), 5);
-        cards.sort_by(|left, right| right.partial_cmp(&left).unwrap_or(Ordering::Equal));
+        sort_cards(&mut cards);
         Ok(Hand { cards })
     }
 }
@@ -398,7 +406,6 @@ pub fn winning_hands<'a>(hands: &[&'a str]) -> Option<Vec<&'a str>> {
     let mut order = (0..hands.len()).collect::<Vec<_>>();
     let parsed_hands = hands
         .iter()
-        .copied()
         .map(|h| h.parse::<Hand>().unwrap())
         .collect::<Vec<_>>();
 
@@ -410,19 +417,18 @@ pub fn winning_hands<'a>(hands: &[&'a str]) -> Option<Vec<&'a str>> {
             .unwrap_or(Ordering::Equal)
     });
 
-    let mut result = vec![];
-
     let best_index = order[0];
     let best = parsed_hands[best_index].clone().rank();
 
-    for index in order.iter().copied() {
-        if let Ordering::Equal = best
-            .partial_cmp(&parsed_hands[index].clone().rank())
-            .unwrap_or(Ordering::Equal)
-        {
-            result.push(hands[index])
-        }
-    }
-
-    Some(result)
+    Some(
+        order
+            .iter()
+            .filter(|&&index| {
+                best.partial_cmp(&parsed_hands[index].clone().rank())
+                    .unwrap_or(Ordering::Equal)
+                    == Ordering::Equal
+            })
+            .map(|&index| hands[index])
+            .collect(),
+    )
 }
