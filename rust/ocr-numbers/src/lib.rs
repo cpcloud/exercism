@@ -3,14 +3,7 @@
 // In order to pass the tests you can add-to or change any of this code.
 
 use enumset::EnumSet;
-use std::{
-    collections::BTreeMap,
-    fmt,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Arc,
-    },
-};
+use std::{collections::BTreeMap, fmt};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -137,13 +130,12 @@ fn parse_numbers_from_line_group(line_group: &str) -> Result<Vec<String>, Error>
 }
 
 pub fn convert(input: &str) -> Result<String, Error> {
-    let num_newlines = Arc::new(AtomicUsize::new(0));
-    let num_newlines_clone = num_newlines.clone();
+    let mut num_newlines = 0;
     let lines = input
-        .split(move |c| {
+        .split(|c| {
             let is_newline = c == '\n';
-            num_newlines_clone.fetch_add(usize::from(is_newline), Ordering::SeqCst);
-            is_newline && num_newlines_clone.load(Ordering::SeqCst) % 4 == 0
+            num_newlines += usize::from(is_newline);
+            is_newline && num_newlines % 4 == 0
         })
         .map(|line_group_text| {
             Ok(parse_numbers_from_line_group(&line_group_text)?
@@ -154,7 +146,7 @@ pub fn convert(input: &str) -> Result<String, Error> {
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let num_newlines = num_newlines.load(Ordering::SeqCst) + 1;
+    num_newlines += 1;
     if num_newlines % 4 != 0 {
         return Err(Error::InvalidRowCount(num_newlines));
     }
