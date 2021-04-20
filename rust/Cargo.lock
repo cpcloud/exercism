@@ -3,6 +3,10 @@
 version = 3
 
 [[package]]
+name = "accumulate"
+version = "0.0.0"
+
+[[package]]
 name = "armstrong_numbers"
 version = "1.1.0"
 

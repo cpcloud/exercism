@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "accumulate",
     "armstrong-numbers",
     "beer-song",
     "book-store",
