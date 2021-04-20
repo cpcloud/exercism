@@ -2,6 +2,7 @@
 members = [
     "armstrong-numbers",
     "beer-song",
+    "book-store",
     "circular-buffer",
     "clock",
     "difference-of-squares",
