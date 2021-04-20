@@ -140,7 +140,7 @@ pub fn convert(input: &str) -> Result<String, Error> {
         .map(|line_group_text| {
             Ok(parse_numbers_from_line_group(&line_group_text)?
                 .iter()
-                .map(|number_text| parse(number_text).to_string())
+                .map(|number_text| parse(number_text))
                 .collect::<Vec<_>>()
                 .join(""))
         })
