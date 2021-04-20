@@ -48,7 +48,7 @@ impl fmt::Display for Value {
 
 fn parse(input: &str) -> String {
     let mut valid = EnumSet::<Value>::all();
-    for (line_index, line) in input.split("\n").enumerate() {
+    for (line_index, line) in input.split('\n').enumerate() {
         valid &= match line_index {
             0 => parse_line_one(&line),
             1 => parse_line_two(&line),
@@ -77,7 +77,7 @@ fn parse_line_one(line: &str) -> EnumSet<Value> {
     match line {
         "   " => Value::One | Value::Four,
         " _ " => EnumSet::all() - (Value::One | Value::Four),
-        _ => return EnumSet::empty(),
+        _ => EnumSet::empty(),
     }
 }
 
@@ -105,7 +105,7 @@ fn parse_line_three(s: &str) -> EnumSet<Value> {
 fn parse_numbers_from_line_group(line_group: &str) -> Result<Vec<String>, Error> {
     let mut map = BTreeMap::new();
 
-    for line in line_group.split("\n") {
+    for line in line_group.split('\n') {
         let nchars = line.len();
 
         if nchars % 3 != 0 {
