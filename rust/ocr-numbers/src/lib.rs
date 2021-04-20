@@ -1,3 +1,4 @@
+#![feature(map_into_keys_values)]
 // The code below is a stub. Just enough to satisfy the compiler.
 // In order to pass the tests you can add-to or change any of this code.
 
@@ -110,19 +111,23 @@ fn parse_line_three(s: &str) -> EnumSet<Value> {
 
 fn parse_numbers_from_line_group(line_group: &str) -> Result<Vec<String>, Error> {
     let mut map = BTreeMap::new();
+
     for line in line_group.split("\n") {
-        if line.len() % 3 != 0 {
-            return Err(Error::InvalidColumnCount(line.len()));
+        let nchars = line.len();
+
+        if nchars % 3 != 0 {
+            return Err(Error::InvalidColumnCount(nchars));
         }
-        for (i, c) in line.as_bytes().chunks(3).enumerate() {
+
+        for (i, chunk) in line.as_bytes().chunks(3).enumerate() {
             let bytes = map.entry(i).or_insert_with(Vec::new);
-            bytes.extend(c);
+            bytes.extend(chunk);
             bytes.push(b'\n');
         }
     }
+
     Ok(map
-        .values()
-        .cloned()
+        .into_values()
         .map(|bytes| {
             String::from_utf8(bytes)
                 .map(|s| s.trim_end_matches('\n').to_owned())
@@ -134,15 +139,13 @@ fn parse_numbers_from_line_group(line_group: &str) -> Result<Vec<String>, Error>
 pub fn convert(input: &str) -> Result<String, Error> {
     let num_newlines = Arc::new(AtomicUsize::new(0));
     let num_newlines_clone = num_newlines.clone();
-    let lines = input.split(move |c| {
-        let is_newline = c == '\n';
-        num_newlines_clone.fetch_add(usize::from(is_newline), Ordering::SeqCst);
-        is_newline && num_newlines_clone.load(Ordering::SeqCst) % 4 == 0
-    });
-
-    let lines = lines
+    let lines = input
+        .split(move |c| {
+            let is_newline = c == '\n';
+            num_newlines_clone.fetch_add(usize::from(is_newline), Ordering::SeqCst);
+            is_newline && num_newlines_clone.load(Ordering::SeqCst) % 4 == 0
+        })
         .map(|line_group_text| {
-            println!("{}", line_group_text);
             Ok(parse_numbers_from_line_group(&line_group_text)?
                 .iter()
                 .map(|number_text| parse(number_text).to_string())
@@ -155,5 +158,6 @@ pub fn convert(input: &str) -> Result<String, Error> {
     if num_newlines % 4 != 0 {
         return Err(Error::InvalidRowCount(num_newlines));
     }
+
     Ok(lines.join(","))
 }
