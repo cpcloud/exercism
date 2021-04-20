@@ -168,10 +168,7 @@ fn order_by_rank_grouped(lhs: &Hand, rhs: &Hand, cmp_order: &[usize]) -> Option<
         }
     }
 
-    let lhs_cards = lhs_accounting.into_values().collect::<Vec<_>>();
-    let rhs_cards = rhs_accounting.into_values().collect::<Vec<_>>();
-
-    order_by_rank_values(lhs_cards.into_iter(), rhs_cards.into_iter())
+    order_by_rank_values(lhs_accounting.into_values(), rhs_accounting.into_values())
 }
 
 fn has_card_value(cards: &[Card], value: Value) -> bool {
@@ -391,7 +388,7 @@ impl FromStr for Hand {
     type Err = Infallible;
 
     fn from_str(hand: &str) -> Result<Self, Self::Err> {
-        let strings = hand.split(" ").collect::<Vec<_>>();
+        let strings = hand.split(' ');
         let mut cards = strings
             .into_iter()
             .map(|s| s.parse::<Card>())
