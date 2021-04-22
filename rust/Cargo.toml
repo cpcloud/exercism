@@ -18,6 +18,7 @@ members = [
     "nth-prime",
     "ocr-numbers",
     "paasio",
+    "parallel-letter-frequency",
     "poker",
     "prime-factors",
     "proverb",
