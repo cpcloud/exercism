@@ -1,4 +1,4 @@
-mod raw {
+mod stdlib_impl {
     use std::{collections::HashMap, sync::mpsc};
 
     pub fn frequency(input: &[&str], worker_count: usize) -> HashMap<char, usize> {
@@ -83,8 +83,8 @@ mod raw {
     }
 }
 
-mod cb {
-    use crossbeam_utils::thread;
+mod crossbeam_impl {
+    use crossbeam::thread;
     use std::{collections::HashMap, sync::mpsc};
 
     // This implementation is the same as the `raw` implementation, except that it
@@ -146,7 +146,7 @@ mod cb {
     }
 }
 
-mod managed {
+mod rayon_impl {
     use rayon::iter::{IntoParallelIterator, ParallelIterator};
     use std::collections::HashMap;
 
@@ -178,4 +178,6 @@ mod managed {
     }
 }
 
-pub use raw::frequency;
+pub use crossbeam_impl::frequency;
+// pub use rayon_impl::frequency;
+// pub use stdlib_impl::frequency;
