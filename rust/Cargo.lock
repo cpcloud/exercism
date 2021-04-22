@@ -7,6 +7,10 @@ name = "accumulate"
 version = "0.0.0"
 
 [[package]]
+name = "acronym"
+version = "1.7.0"
+
+[[package]]
 name = "armstrong_numbers"
 version = "1.1.0"
 
