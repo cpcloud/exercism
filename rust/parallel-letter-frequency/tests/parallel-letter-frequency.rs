@@ -40,9 +40,7 @@ const STAR_SPANGLED_BANNER: [&str; 8] = [
 
 #[test]
 fn test_no_texts() {
-    let left = dbg!(frequency::frequency(&[], 4));
-    let right = dbg!(HashMap::<char, usize>::new());
-    // assert_eq!(left, right);
+    assert_eq!(frequency::frequency(&[], 4), HashMap::new());
 }
 
 #[test]
