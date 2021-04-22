@@ -1,5 +1,4 @@
-#[cfg(not(feature = "rayon"))]
-mod unmanaged {
+mod raw {
     use std::{collections::HashMap, sync::mpsc};
 
     pub fn frequency(input: &[&str], worker_count: usize) -> HashMap<char, usize> {
@@ -62,6 +61,10 @@ mod unmanaged {
                         .unwrap();
                 })
             })
+            // this collect is critical: without collecting into a vec, the computation
+            // will not run in parallel.
+            .collect::<Vec<_>>()
+            .into_iter()
             .for_each(|thread| thread.join().unwrap());
 
         // Hang up the producer side of the channel, otherwise the consumer will hangforever.
@@ -80,7 +83,69 @@ mod unmanaged {
     }
 }
 
-#[cfg(feature = "rayon")]
+mod cb {
+    use crossbeam_utils::thread;
+    use std::{collections::HashMap, sync::mpsc};
+
+    // This implementation is the same as the `raw` implementation, except that it
+    // uses scoped threads to avoid copying the input.
+    pub fn frequency(input: &[&str], worker_count: usize) -> HashMap<char, usize> {
+        let (producer, consumer) = mpsc::channel::<HashMap<_, usize>>();
+        let (result_tx, result_rx) = mpsc::sync_channel(1);
+
+        thread::scope(move |scope| {
+            let consumer_thread = scope.spawn(move |_| {
+                let mut freq = HashMap::new();
+                while let Ok(map) = consumer.recv() {
+                    for (c, count) in map.into_iter() {
+                        *freq.entry(c).or_default() += count;
+                    }
+                }
+
+                result_tx.send(freq).unwrap();
+            });
+
+            let nchunks = input.len() / worker_count;
+            input
+                .chunks(if nchunks == 0 {
+                    input.len().max(1)
+                } else {
+                    nchunks
+                })
+                .map(|chunk| {
+                    let producer_clone = producer.clone();
+
+                    scope.spawn(move |_| {
+                        producer_clone
+                            .send(chunk.iter().fold(
+                                Default::default(),
+                                move |mut counts, string| {
+                                    for c in string
+                                        .chars()
+                                        .filter(|c| c.is_alphabetic())
+                                        .flat_map(|c| c.to_lowercase())
+                                    {
+                                        *counts.entry(c).or_default() += 1;
+                                    }
+                                    counts
+                                },
+                            ))
+                            .unwrap();
+                    })
+                })
+                .collect::<Vec<_>>()
+                .into_iter()
+                .for_each(|thread| thread.join().unwrap());
+
+            drop(producer);
+
+            consumer_thread.join().unwrap();
+            result_rx.recv().unwrap()
+        })
+        .unwrap()
+    }
+}
+
 mod managed {
     use rayon::iter::{IntoParallelIterator, ParallelIterator};
     use std::collections::HashMap;
@@ -113,7 +178,4 @@ mod managed {
     }
 }
 
-#[cfg(feature = "rayon")]
-pub use managed::frequency;
-#[cfg(not(feature = "rayon"))]
-pub use unmanaged::frequency;
+pub use raw::frequency;

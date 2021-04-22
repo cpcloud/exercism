@@ -4,4 +4,6 @@ name = "parallel-letter-frequency"
 version = "0.0.0"
 
 [dependencies]
-rayon = { version = "1", optional = true }
+rayon = "1"
+crossbeam = "0.8"
+crossbeam-utils = "0.8"
