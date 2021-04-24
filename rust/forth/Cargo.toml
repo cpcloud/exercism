@@ -4,5 +4,4 @@ name = "forth"
 version = "1.7.0"
 
 [dependencies]
-chain-map = "0.1.0"
 nom = "6.1"
