@@ -16,6 +16,7 @@ members = [
     "hello-world",
     "leap",
     "macros",
+    "minesweeper",
     "nth-prime",
     "ocr-numbers",
     "paasio",
