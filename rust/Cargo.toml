@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "acronym",
     "accumulate",
+    "acronym",
     "armstrong-numbers",
     "beer-song",
     "book-store",
@@ -10,6 +10,7 @@ members = [
     "difference-of-squares",
     "dot-dsl",
     "etl",
+    "forth",
     "gigasecond",
     "grains",
     "hello-world",
