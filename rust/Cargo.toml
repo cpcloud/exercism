@@ -27,6 +27,7 @@ members = [
     "raindrops",
     "react",
     "reverse-string",
+    "say",
     "sum-of-multiples",
     "xorcism",
 ]
