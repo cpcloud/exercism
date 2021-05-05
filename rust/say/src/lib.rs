@@ -117,10 +117,6 @@ pub fn encode(n: u64) -> String {
         return "zero".to_string();
     }
 
-    if let Some(value) = ones(n).or_else(|| teens(n)) {
-        return value.to_owned();
-    }
-
     let s = n.to_string();
     let splits = split_thousands(s.chars().collect::<Vec<_>>());
     let num_groups = splits.len();
