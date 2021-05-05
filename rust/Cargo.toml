@@ -30,5 +30,6 @@ members = [
     "reverse-string",
     "say",
     "sum-of-multiples",
+    "variable-length-quantity",
     "xorcism",
 ]
