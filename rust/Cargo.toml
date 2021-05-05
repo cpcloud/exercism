@@ -23,6 +23,7 @@ members = [
     "parallel-letter-frequency",
     "poker",
     "prime-factors",
+    "protein-translation",
     "proverb",
     "raindrops",
     "react",
